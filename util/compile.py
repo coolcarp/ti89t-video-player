@@ -34,11 +34,5 @@ with open(os.path.join("..", c_path), "r") as f_main: # Clone main for number of
     with open(main_file_name + ".c", "w") as f:
         str2darr = "{" + (("\"\\0" + main_ti_folder + "\\\\px{:02d}\",") * length_comp).format(*[i for i in range(1, length_comp+1)]) +"}"
         f.write(main_data.format(WIDTH, HEIGHT, FPS, length_comp, str2darr))
-    #shutil.copy("..\\extgraph.h", "extgraph.h")
-    #shutil.copy("..\\extgraph.a", "extgraph.a")
-    #subprocess.run(["..\\util\\tigcc.exe", main_file_name + ".c", "extgraph.a", "--varname", main_ti_folder + "\\" + main_file_name, "-Os", "-w", "-ffunction-sections", "-fdata-sections"])
     subprocess.run(["tigcc", main_file_name + ".c", "--varname", main_ti_folder + "\\" + main_file_name, "-std=gnu99", "-Os", "-Wall", "-W", "-Wwrite-strings", "-fomit-frame-pointer", "-mregparm=5", "-ffunction-sections", "-fdata-sections", "-mno-bss", "-Wa,-l", "-mpcrel",])# "--optimize-code", "--cut-ranges", "--remove-sections"])
     archiveVar(main_file_name + ".89z")
-    #os.remove("extgraph.a") 
-    #os.remove("extgraph.h")
-    #os.remove("play.c") # Get rid of this line if you want to see the final source. 
