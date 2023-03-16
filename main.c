@@ -137,134 +137,147 @@ DEFINE_INT_HANDLER(BreakDrawInt) {
 }
 
 DEFINE_INT_HANDLER(DrawFrameInt) {
-   unsigned char x0 = 0, x1 = 0, lastByte = 0; // Initialize vars for writing
-   unsigned short currentColor = 0;
-   unsigned char * line = LCD_MEM;
-   unsigned char *dataPtr = gdataPtr;
-   unsigned char *dataBlockEndPtr = gdataBlockEndPtr;
+	unsigned char x0 = 0, x1 = 0, lastByte = 0; // Initialize vars for writing
+	unsigned short currentColor = 0;
+	unsigned char * line = LCD_MEM;
+	unsigned char *dataPtr = gdataPtr;
+	unsigned char *dataBlockEndPtr = gdataBlockEndPtr;
 
-   while (dataPtr < dataBlockEndPtr) { // Draw a frame (essentially copied from for loop, with breaks instead of wait for frame)
-      unsigned char nextByte = *dataPtr;
-      if (line >= (unsigned char *)LCD_MEM + 30 * HEIGHT) {
-         break;
-      }
-      dataPtr++;
-      unsigned short newColor = ~currentColor; // Defined here so it doesnt have to be recalculated.
-      if (nextByte == 255 || nextByte == 250 || (lastByte < WIDTH && nextByte < lastByte)) { // New horizontal line? Then finish the previous row.
-         SpecialFastDrawHLine_R(line, x0, WIDTH - 1, newColor);
-         x0 = 0;
-         x1 = 0;
-         line += 30; // The screen buffer is 240 pixels wide.
-      }
-      if (nextByte < WIDTH) { // This is the normal line draw. Majority
-         x1 = nextByte;
-         SpecialFastDrawHLine_R(line, x0, x1, newColor);
-         currentColor = newColor;
-         x0 = x1;
-      } else if (nextByte == 254) { // This is if the frame has not changed. Just wait.
-         break;
-      } else if (nextByte == 250) { // Next byte will be repeats of 255
-         unsigned char repeats = (*dataPtr) - 1;
-         unsigned long value = newColor ? 0xFFFFFFFF : 0;
-         for (unsigned char i = 0; i < repeats; i++) {
-            asm volatile("move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; lea 10(%0),%0" : "=a" (line) : "d" (value) : "cc");
-         }
-         dataPtr++;
-      }
-      lastByte = nextByte;
-   }
-   short row = _rowread(0x0000);
-   if (dataPtr >= dataBlockEndPtr || row == 8) { // TODO portable row reading.
-      if (currentFile < sizeof(datas) / sizeof(datas[0])) {
-         currentFile++;
-      }
-      dataPtr = datas[currentFile];
-      dataBlockEndPtr = dataPtr + dataLengths[currentFile];
-   } else if (row == 2) { // TODO portable row reading.
-      if (currentFile > 0) {
-         currentFile--;
-      }
-      dataPtr = datas[currentFile];
-      dataBlockEndPtr = dataPtr + dataLengths[currentFile];
-   } else if(row == 1) { // pressing enter, pause
-      SetIntVec(AUTO_INT_5, DUMMY_HANDLER);
-      while(_rowread(0x0000)); // Wait to let go of key.
-      WaitForMillis(ECHO_PREVENTION_DELAY);
-      while(_rowread(0x0000) != 1); // Wait for second press.
-      while(_rowread(0x0000)); // Wait to let go of key.
-      WaitForMillis(ECHO_PREVENTION_DELAY);
-      SetIntVec(AUTO_INT_5, DrawFrameInt);
-   }
+	while (dataPtr < dataBlockEndPtr) { // Draw a frame (essentially copied from for loop, with breaks instead of wait for frame)
+		unsigned char nextByte = *dataPtr;
+		if (line >= (unsigned char *)LCD_MEM + 30 * HEIGHT) {
+			break;
+		}
+		dataPtr++;
+		unsigned short newColor = ~currentColor; // Defined here so it doesnt have to be recalculated.
+		if (nextByte == 255 || nextByte == 250 || (lastByte < WIDTH && nextByte < lastByte)) { // New horizontal line? Then finish the previous row.
+			SpecialFastDrawHLine_R(line, x0, WIDTH - 1, newColor);
+			x0 = 0;
+			x1 = 0;
+			line += 30; // The screen buffer is 240 pixels wide.
+		}
+		if (nextByte < WIDTH) { // This is the normal line draw. Majority
+			x1 = nextByte;
+			SpecialFastDrawHLine_R(line, x0, x1, newColor);
+			currentColor = newColor;
+			x0 = x1;
+		} else if (nextByte == 254) { // This is if the frame has not changed. Just wait.
+			break;
+		} else if (nextByte == 250) { // Next byte will be repeats of 255
+			unsigned char repeats = (*dataPtr) - 1;
+			unsigned long value = newColor ? 0xFFFFFFFF : 0;
+			for (unsigned char i = 0; i < repeats; i++) {
+				asm volatile("move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; move.l %1,(%0)+; lea 10(%0),%0" : "=a" (line) : "d" (value) : "cc");
+			}
+			dataPtr++;
+		}
+		lastByte = nextByte;
+	}
+	short row = _rowread(0x0000);
+	if (dataPtr >= dataBlockEndPtr || row == 8) { // TODO portable row reading.
+		if (currentFile < sizeof(datas) / sizeof(datas[0])) {
+		 currentFile++;
+		}
+		dataPtr = datas[currentFile];
+		dataBlockEndPtr = dataPtr + dataLengths[currentFile];
+	} else if (row == 2) { // TODO portable row reading.
+		if (currentFile > 0) {
+		 currentFile--;
+		}
+		dataPtr = datas[currentFile];
+		dataBlockEndPtr = dataPtr + dataLengths[currentFile];
+	} else if(row == 1) { // pressing enter, pause
+		SetIntVec(AUTO_INT_5, DUMMY_HANDLER);
+		while(_rowread(0x0000)); // Wait to let go of key.
+		WaitForMillis(ECHO_PREVENTION_DELAY);
+		while(_rowread(0x0000) != 1); // Wait for second press.
+		while(_rowread(0x0000)); // Wait to let go of key.
+		WaitForMillis(ECHO_PREVENTION_DELAY);
+		SetIntVec(AUTO_INT_5, DrawFrameInt);
+	}
 
-   gdataPtr = dataPtr;
-   gdataBlockEndPtr = dataBlockEndPtr;
+	gdataPtr = dataPtr;
+	gdataBlockEndPtr = dataBlockEndPtr;
 }
 
 void _main(void) {
-   static const char VARNAME_STRS[TOTAL_STR][9] = {};
-   SYM_ENTRY *symPtrs[TOTAL_STR];
-   short missingfile = FALSE;
+	static const char VARNAME_STRS[TOTAL_STR][9] = {};
+	SYM_ENTRY *symPtrs[TOTAL_STR];
+	unsigned short missingfile = 0;
 
-   ClrScr(); // Initial setup
+	while(_rowread(0x0000)); // Wait to let go of program run button (enter)
+	clrscr(); // Initial setup
 
-   for (unsigned short fileI = 0; fileI < TOTAL_STR; fileI++) { // Set up direct pointers to data while locking memory blocks.
-      SYM_ENTRY * symPtr = openBinVAT(VARNAME_STRS[fileI] + sizeof(VARNAME_STRS[0]) - 1); // Define the data using the vat
-      if (symPtr == NULL) {
-         missingfile = TRUE;
-         DrawStr(0, 0, VARNAME_STRS[fileI], A_NORMAL);
-         GKeyIn(NULL, 0);
-      }
-      unsigned char* data = HLock(symPtr->handle);
-      data += 2; // Offset from VAT length data
+	for (unsigned short fileI = 0; fileI < TOTAL_STR; fileI++) { // Set up direct pointers to data while locking memory blocks.
+		SYM_ENTRY * symPtr = openBinVAT(VARNAME_STRS[fileI] + sizeof(VARNAME_STRS[0]) - 1); // Define the data using the vat
+		if (symPtr == NULL) {
+			missingfile = fileI;
+			break;
+		}
+		unsigned char* data = HLock(symPtr->handle);
+		data += 2; // Offset from VAT length data
 
-      dataLengths[fileI] = *(unsigned short *)data; // Define the length of the data
-      datas[fileI] = data + 2; // Offset from real length data
-      symPtrs[fileI] = symPtr;
-   }
+		dataLengths[fileI] = *(unsigned short *)data; // Define the length of the data
+		datas[fileI] = data + 2; // Offset from real length data
+		symPtrs[fileI] = symPtr;
+	}
 
-   if (missingfile) {
-      return;
-   }
+	if (missingfile) {
+		for (unsigned short fileI = 0; fileI < missingfile; fileI++) { // Unlock memory blocks.
+			HeapUnlock(symPtrs[fileI]->handle);
+		}
+		printf("Missing file index: %u\nMissing file name: %s", missingfile, VARNAME_STRS[missingfile]+1); // Get rid of \0
+		GKeyIn(NULL, 0);
+		return;
+	}
 
-   // Reinitialize global variables.
-   gdataPtr = datas[0];
-   gdataBlockEndPtr = datas[0] + dataLengths[0];
-   currentFile = 0;
+	// Reinitialize global variables.
+	gdataPtr = datas[0];
+	gdataBlockEndPtr = datas[0] + dataLengths[0];
+	currentFile = 0;
 
-   INT_HANDLER oldInt5 = GetIntVec(AUTO_INT_5); // Save default stuff
-   INT_HANDLER onInt = GetIntVec(INT_VEC_ON_KEY_PRESS);
-   unsigned char oldStart = PRG_getStart();
+	INT_HANDLER oldInt5 = GetIntVec(AUTO_INT_5); // Save default stuff
+	INT_HANDLER onInt = GetIntVec(INT_VEC_ON_KEY_PRESS);
+	unsigned char oldStart = PRG_getStart();
 
-   while(_rowread(0x0000)); // Wait to let go of program run button (enter)
+	asm volatile("trap #12; move.w #0x0200,%sr"); // Set defaults to new stuff
+	SetIntVec(AUTO_INT_5, DrawFrameInt);
+	SetIntVec(INT_VEC_ON_KEY_PRESS, BreakDrawInt);
 
-   asm volatile("trap #12; move.w #0x0200,%sr"); // Set defaults to new stuff
-   SetIntVec(AUTO_INT_5, DrawFrameInt);
-   SetIntVec(INT_VEC_ON_KEY_PRESS, BreakDrawInt);
+	/* 
+		209 = 21.33 FPS (Every 3 seconds = +4 frames)
+		193 = 16.00 FPS (Every 1 second = -4 frame)
+		205 = 19.6923077 FPS (Every 13 seconds, -4 frame)
+		Target = 20 FPS 
+		After 3 second, 64 frames will have passed with 209 start, when only 60 shouldve. Play at 16 FPS for 16 frames after to account for these extra 4 frames.
+	*/
+	if(FPS == 20) {
+		unsigned short frameCounter = 0;
+		PRG_setStart(209); 
+		while (currentFile < TOTAL_STR) {
+			if(frameCounter == 64) {
+			PRG_setStart(205);
+			} else if(frameCounter == 320) {
+			PRG_setStart(209);
+			frameCounter = 0;
+			}
+			asm volatile("move.b #0b10000,0x600005");
+			frameCounter++;
+		}
+	} else {
+		PRG_setStart(257 - (short)((float)1024 / (float)FPS)); // Approximate, unless factor of 1024.
+	}
+	WaitForMillis(ECHO_PREVENTION_DELAY);
 
-   PRG_setStart(196); // If start was 196 for all frames, actual playback speed: 16hz * 1.0069 (found by experiment)
+	asm volatile("trap #12; move.w #0x0000,%sr"); // Restore the program / defaults
+	SetIntVec(INT_VEC_ON_KEY_PRESS, onInt);
+	SetIntVec(AUTO_INT_5, oldInt5);
+	PRG_setStart(oldStart);
 
-   unsigned char frameCounter = 0;
-   while (currentFile < TOTAL_STR) {
-      asm volatile("move.b #0b10000,0x600005");
-      /*frameCounter++;
-      if (frameCounter == 40) { // Calculated by: (1/(1.0068 - 1)) / 2 = ~73.5 (note: i dont know why divide by 2 shows up)
-         PRG_setStart(195);
-      } else if (frameCounter == 41) {
-         frameCounter = 0;
-         PRG_setStart(196);
-      }*/
-   }
-   WaitForMillis(ECHO_PREVENTION_DELAY);
+	GKeyFlush();
+	OSClearBreak();
 
-   asm volatile("trap #12; move.w #0x0000,%sr"); // Restore the program / defaults
-   SetIntVec(INT_VEC_ON_KEY_PRESS, onInt);
-   SetIntVec(AUTO_INT_5, oldInt5);
-   PRG_setStart(oldStart);
-
-   GKeyFlush();
-   OSClearBreak();
-
-   for (unsigned short fileI = 0; fileI < TOTAL_STR; fileI++) { // Unlock memory blocks.
-      HeapUnlock(symPtrs[fileI]->handle);
-   }
+	for (unsigned short fileI = 0; fileI < TOTAL_STR; fileI++) { // Unlock memory blocks.
+		HeapUnlock(symPtrs[fileI]->handle);
+	}
 }
