@@ -245,7 +245,9 @@ void _main(void) {
 	SetIntVec(INT_VEC_ON_KEY_PRESS, BreakDrawInt);
 
 	{}
-
+	
+	SetIntVec(AUTO_INT_5, DUMMY_HANDLER);
+	
 	WaitForMillis(ECHO_PREVENTION_DELAY);
 
 	asm volatile("trap #12; move.w #0x0000,%sr"); // Restore the program / defaults
@@ -253,10 +255,14 @@ void _main(void) {
 	SetIntVec(AUTO_INT_5, oldInt5);
 	PRG_setStart(oldStart);
 
-	GKeyFlush();
-	OSClearBreak();
-
 	for (unsigned short fileI = 0; fileI < TOTAL_STR; fileI++) { // Unlock memory blocks.
 		HeapUnlock(symPtrs[fileI]->handle);
 	}
+	
+	GKeyFlush();
+	if(OSCheckBreak()) {
+		OSClearBreak();
+	}
+	
+	return;
 }
