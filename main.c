@@ -244,29 +244,8 @@ void _main(void) {
 	SetIntVec(AUTO_INT_5, DrawFrameInt);
 	SetIntVec(INT_VEC_ON_KEY_PRESS, BreakDrawInt);
 
-	/* 
-		209 = 21.33 FPS (Every 3 seconds = +4 frames)
-		193 = 16.00 FPS (Every 1 second = -4 frame)
-		205 = 19.6923077 FPS (Every 13 seconds, -4 frame)
-		Target = 20 FPS 
-		After 3 second, 64 frames will have passed with 209 start, when only 60 shouldve. Play at 16 FPS for 16 frames after to account for these extra 4 frames.
-	*/
-	if(FPS == 20) {
-		unsigned short frameCounter = 0;
-		PRG_setStart(209); 
-		while (currentFile < TOTAL_STR) {
-			if(frameCounter == 64) {
-			PRG_setStart(205);
-			} else if(frameCounter == 320) {
-			PRG_setStart(209);
-			frameCounter = 0;
-			}
-			asm volatile("move.b #0b10000,0x600005");
-			frameCounter++;
-		}
-	} else {
-		PRG_setStart(257 - (short)((float)1024 / (float)FPS)); // Approximate, unless factor of 1024.
-	}
+	{}
+
 	WaitForMillis(ECHO_PREVENTION_DELAY);
 
 	asm volatile("trap #12; move.w #0x0000,%sr"); // Restore the program / defaults
