@@ -23,6 +23,8 @@ Run build.py (16fps) or build32fps.bat (32 fps). Arguments are optional, but def
 You can also use run in CMD with variables:
 `build.py WIDTH HEIGHT FPS COLOR_THRESHOLD TIVARNAME`
 
+I would recommend archiving your other programs/files on your calculator before running this, just in case. I have had issues with low battery, where after execution the home screen would be frozen or address error. This is easily resolved though by holding 2nd, < and >, and then pressin ON. 
+
 ## Credit
 
 [Lionel Debroux](https://github.com/debrouxl) for helping me get this working and optimizing the C code. I would not have figured this out without his help.
