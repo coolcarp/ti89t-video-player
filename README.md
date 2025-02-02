@@ -18,6 +18,7 @@ FFMPEG is also required. Place it in the util folder (You might just be able to 
 
 ## Usage
 
+Create a video directory in the project root, and add a video to that directory called BadApple.mp4 that you want to be converted.
 Run build.py (16fps) or build32fps.bat (32 fps). Arguments are optional, but default to 160, 100, 16, 128, and ba (5th argument is TI folder name, dont change this). This will create folders comp and output. comp will contain binary data split up to 64kb files, and output will contain all programs you need to copy to the calculator. They should all copy easily using [TILP](http://lpg.ticalc.org/prj_tilp/) (TI's program probably works too), but you may have to garbage collect in between occasionally.
 
 You can also use run in CMD with variables:
